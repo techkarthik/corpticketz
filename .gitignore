@@ -1,0 +1,19 @@
+# Node backend
+backend/node_modules/
+backend/.env
+backend/*.log
+backend/server_log.txt
+
+# Flutter frontend
+frontend/.dart_tool/
+frontend/.flutter-plugins-dependencies
+frontend/.pub-cache/
+frontend/.pub/
+frontend/build/
+frontend/*.iml
+frontend/.idea/
+
+# General
+.vscode/
+*.log
+New Text Document.txt
