@@ -23,8 +23,8 @@ app.use('/api/', generalLimiter);
 // Stricter Rate Limiting for Auth
 const authLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 10, // limit each IP to 10 requests per hour for auth routes
-    message: 'Too many auth attempts, please try again after an hour'
+    max: 1000, // Relaxed for testing
+    message: { message: 'Too many auth attempts, please try again after an hour' }
 });
 
 app.use(cors());

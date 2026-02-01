@@ -7,7 +7,7 @@ class ApiService {
   // Using 127.0.0.1 to avoid IPv6 resolution issues on Windows
   // For Android connectivity, use machine IP instead of 127.0.0.1
   // For local Windows development, 127.0.0.1 is most reliable.
-  static const String baseUrl = 'http://72.60.23.223:3005/api'; 
+  static const String baseUrl = 'http://141.148.218.210:3002/api'; 
 
   Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();

@@ -17,3 +17,7 @@ frontend/.idea/
 .vscode/
 *.log
 New Text Document.txt
+
+*.key
+*.pub
+*.ppk

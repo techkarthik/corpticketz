@@ -10,51 +10,83 @@ const db = createClient({
 });
 
 exports.register = async (req, res) => {
-    const { email } = req.body;
-    // Generate OTP cryptographically securely
-    const otp = crypto.randomInt(100000, 999999).toString();
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 mins
-
     try {
+
+        if (!req.body) {
+            throw new Error('No body parsed');
+        }
+        const { email } = req.body;
+
+        if (!email) {
+            throw new Error('Email is missing in body');
+        }
+
+        console.log('Register request for:', email);
+        const lowerEmail = email.toLowerCase();
+
+        // Generate OTP cryptographically securely
+        const otp = crypto.randomInt(100000, 999999).toString();
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 mins
+
         // Upsert pending registration
+        console.log('Upserting pending registration...', { lowerEmail, otp, expiresAt });
         await db.execute({
             sql: `INSERT INTO pending_registrations (email, otp, expires_at) 
                   VALUES (?, ?, ?) 
                   ON CONFLICT(email) DO UPDATE SET otp=excluded.otp, expires_at=excluded.expires_at`,
-            args: [email, otp, expiresAt]
+            args: [lowerEmail, otp, expiresAt]
         });
+        console.log('DB Upsert successful');
 
         // Send Email
+        console.log('Sending email...');
         await emailService.sendEmail(
-            email,
+            lowerEmail,
             'Your Verification Code',
             `<p>Your OTP for CorpTicketz registration is: <b>${otp}</b></p>`
         );
+        console.log('Email sent successfully');
 
         res.json({ message: 'Verification code sent to email.' });
     } catch (e) {
         console.error('Registration error:', e);
-        res.status(500).json({ message: e.message });
+        res.status(500).json({ message: e.message, stack: e.stack });
     }
 };
 
 exports.verifyEmail = async (req, res) => {
-    const { email, otp } = req.body;
     try {
+        const { email, otp } = req.body;
+        console.log('Verify request:', { email, otp });
+        const lowerEmail = email.toLowerCase();
+
         const result = await db.execute({
             sql: 'SELECT * FROM pending_registrations WHERE email = ?',
-            args: [email]
+            args: [lowerEmail]
         });
 
-        if (result.rows.length === 0) return res.status(400).json({ message: 'Request not found.' });
+        if (result.rows.length === 0) {
+            console.log('No pending registration found for:', lowerEmail);
+            return res.status(400).json({ message: 'Request not found.' });
+        }
 
         const pending = result.rows[0];
-        if (pending.otp !== otp) return res.status(400).json({ message: 'Invalid OTP.' });
-        if (new Date(pending.expires_at) < new Date()) return res.status(400).json({ message: 'OTP Expired.' });
+        console.log('Found pending:', pending);
 
-        res.json({ message: 'Email verified.', email: email });
+        if (pending.otp !== otp) {
+            console.log('Invalid OTP. Expected:', pending.otp, 'Got:', otp);
+            return res.status(400).json({ message: 'Invalid OTP.' });
+        }
+
+        if (new Date(pending.expires_at) < new Date()) {
+            console.log('OTP Expired. ExpiresAt:', pending.expires_at, 'Now:', new Date());
+            return res.status(400).json({ message: 'OTP Expired.' });
+        }
+
+        res.json({ message: 'Email verified.', email: lowerEmail });
     } catch (e) {
-        res.status(500).json({ message: e.message });
+        console.error('Verify error:', e);
+        res.status(500).json({ message: e.message, stack: e.stack });
     }
 };
 
